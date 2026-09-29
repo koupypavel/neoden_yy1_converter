@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: User guide
+    url: https://github.com/koupypavel/neoden_yy1_converter/blob/main/docs/USER-GUIDE.md
+    about: How to install, what to export, and how the window works
