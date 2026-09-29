@@ -1,0 +1,6 @@
+# The tool itself runs on the Python standard library (tkinter included).
+# These are only needed to read spreadsheet BOMs and feeder lists:
+openpyxl>=3.0    # .xlsx
+xlrd>=2.0        # .xls
+# and to build the Windows exe:
+pyinstaller>=6.0

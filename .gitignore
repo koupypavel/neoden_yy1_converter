@@ -1,0 +1,33 @@
+# build output -- the exe is attached to each GitHub release instead
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+
+# the previous vendor converter, kept locally for comparison only
+old/
+
+# board projects live in their own folders, not here
+kicad/
+pads/
+
+# the machine's user manual is NeoDen's; get it from neodentech.com
+reference/*.pdf
+
+# per-machine and per-user state
+.yy1_converter.json
+yy1_feeder_list.csv
+feeder_list_backups/
+
+# local scratch
+*.stale.bak
+~$*
+
+# real boards, real reels, real logs -- never public
+reference/*.csv
+feeders/
+docs/canlab.ods
+docs/gui-*.png
+TEST-NOTES.md
+*_yy1_profile.json
