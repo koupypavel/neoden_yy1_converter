@@ -192,6 +192,14 @@ fiducial and overall offset, the rotation offset, the file format, whether
 skipped parts stay in the file with Skip = 1 or are left out, and the four
 nozzle-change rows.
 
+**A panel that only fits the machine turned:** on the Job header tab, set
+*Board on the machine turned* to 90°, 180° or 270° (counter-clockwise, seen
+from above). The whole board turns: every position and part rotation, the
+board size (width and height swap at 90° and 270°), the fiducial and the
+panel rows and columns. The Board tab then shows it as it will lie on the
+machine. The setting is saved with the board, and a file read back off the
+SD card comes back with it.
+
 On the machine: load the reels per the sheet, check the nozzles, load the
 file, then **Step** the first part of each reel before running the board.
 Step a polarised part first. If a whole board comes out turned, set the

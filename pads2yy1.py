@@ -1100,6 +1100,17 @@ def write_files(conv, outdir=None, profile_path=None, say=print):
     """Write one file per side plus the profile beside them."""
     project, prefix, sides, profile = conv.project, conv.prefix, conv.sides, conv.profile
     width, height = conv.width, conv.height
+    # the board turned on the machine, when the profile says so
+    angle = getattr(profile, 'board_rotation', 0) or 0
+    if angle:
+        for side in sides:
+            yy1.orient(sides[side], width, height, angle)
+            for part in sides[side]:
+                part['rot'] = yy1.norm_rot(part.get('base_rot', part['rot']) + angle
+                                           + profile.rot_offset +
+                                           profile.settings_for(part['package'], part['comment'],
+                                                                part['ref']).get('rot_offset', 0.0))
+        width, height = yy1.turn_size(width, height, angle)
     class _A(object):
         pass
     args = _A()
@@ -1126,9 +1137,10 @@ def write_files(conv, outdir=None, profile_path=None, say=print):
                                            (width, height), prefix):
             say('sheet   %s' % sheet)
     # The board size goes into the profile beside the file, so the window can
-    # draw the board when the CSV is opened on its own.
+    # draw the board when the CSV is opened on its own -- the CAD size; the
+    # rotation is in the profile too.
     profile.board = profile.board or prefix
-    profile.board_w, profile.board_h = width, height
+    profile.board_w, profile.board_h = conv.width, conv.height
     # Beside the project, not beside the output: the profile belongs to the
     # board, and the window looks for it there. Writing it next to the CSV
     # when --outdir differs made two copies that drifted apart.

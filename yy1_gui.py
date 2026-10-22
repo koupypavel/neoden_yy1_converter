@@ -910,6 +910,19 @@ class App(tk.Tk):
                           'out turned as a whole', foreground='#666').pack(side='left', padx=6)
         r = ttk.Frame(opts)
         r.pack(anchor='w', pady=(6, 0))
+        ttk.Label(r, text='Board on the machine turned').pack(side='left')
+        self.board_rot_var = tk.StringVar(value='0')
+        for angle in yy1.BOARD_ROTATIONS:
+            ttk.Radiobutton(r, text='%d°' % angle, value=str(angle),
+                            variable=self.board_rot_var,
+                            command=lambda: self.set_board_rotation(
+                                int(self.board_rot_var.get()))).pack(side='left', padx=(6, 0))
+        ttk.Label(r, text='counter-clockwise -- for a panel that only fits the '
+                          'machine the other way. Positions, rotations, size, '
+                          'fiducial and panel all turn with it.',
+                  foreground='#666').pack(side='left', padx=8)
+        r = ttk.Frame(opts)
+        r.pack(anchor='w', pady=(6, 0))
         ttk.Label(r, text='Format').pack(side='left')
         self.format_box = ttk.Combobox(r, textvariable=self.format_var,
                                        width=8, state='readonly',
@@ -3620,12 +3633,25 @@ class App(tk.Tk):
         result.profile.absorb(parts)
         # A CSV carries no board size. The profile may; failing that, the
         # parts' extent plus a margin is drawn and labelled as an estimate.
+        angle = result.profile.board_rotation
         if result.profile.board_w and result.profile.board_h:
             result.width, result.height = result.profile.board_w, result.profile.board_h
         else:
-            result.width = max(p['x'] for p in parts) + 3.0
-            result.height = max(p['y'] for p in parts) + 3.0
+            tw = max(p['x'] for p in parts) + 3.0
+            th = max(p['y'] for p in parts) + 3.0
+            result.width, result.height = yy1.turn_size(tw, th, angle)
             result.board_estimated = True
+        if angle:
+            # The file was written for the board turned by `angle`; its
+            # positions and rotations are taken back to the CAD frame, and
+            # refresh turns them again -- the same numbers come out.
+            for part in parts:
+                part['base_x'], part['base_y'] = yy1.unturn_point(
+                    part['x'], part['y'], result.width, result.height, angle)
+                part['base_rot'] = yy1.norm_rot(part['base_rot'] - angle)
+            job = result.profile.job
+            if float(job.fid_x or 0) or float(job.fid_y or 0):
+                pass                # the fiducial stays in the turned frame
 
         self.result = result
         self._type_order = []
@@ -3951,6 +3977,35 @@ class App(tk.Tk):
         self.mark_dirty()
         self.refresh()
 
+    def set_board_rotation(self, angle):
+        """Turn the whole board on the machine, CCW, to `angle`."""
+        if not self.result:
+            self.board_rot_var.set('0')
+            return
+        profile = self.result.profile
+        old = profile.board_rotation
+        angle = int(angle) % 360
+        if angle == old:
+            return
+        bw, bh = getattr(self.result, 'base_size', (self.result.width, self.result.height))
+        # the fiducial and the panel live in the turned frame: carry them over
+        job = profile.job
+        if float(job.fid_x or 0) or float(job.fid_y or 0):
+            x, y = yy1.unturn_point(float(job.fid_x), float(job.fid_y), bw, bh, old)
+            x, y = yy1.turn_point(x, y, bw, bh, angle)
+            job.fid_x, job.fid_y = round(x, 3), round(y, 3)
+        if (angle - old) % 180 == 90:
+            job.unit_length, job.unit_width = job.unit_width, job.unit_length
+            job.rows, job.columns = job.columns, job.rows
+        profile.board_rotation = angle
+        self.load_job_tab()
+        self.say('board turned %d° counter-clockwise on the machine -- every '
+                 'part, the fiducial and the panel follow; the board is now '
+                 '%.1f x %.1f mm' % ((angle,) + yy1.turn_size(bw, bh, angle)))
+        self.mark_dirty()
+        self.refresh()
+        self.draw_board()
+
     def apply_rotation(self):
         if not self.result:
             return
@@ -3988,6 +4043,8 @@ class App(tk.Tk):
 
     def load_job_tab(self):
         job = self.result.profile.job
+        if hasattr(self, 'board_rot_var'):
+            self.board_rot_var.set(str(self.result.profile.board_rotation))
         if hasattr(self, 'omit_var'):
             self.omit_var.set(bool(self.result.profile.omit_skipped))
         for field in ('unit_length', 'unit_width', 'rows', 'columns',

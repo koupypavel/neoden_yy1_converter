@@ -422,6 +422,19 @@ the sheet count down the file, so they match what the machine shows.
 and pulls its feeder numbers, modes and heights into the profile — so the
 settings an operator made on the touchscreen survive the next KiCad export.
 
+## Turning the whole board
+
+Some panels only fit the machine turned. *Board on the machine turned*
+(Job header tab; `board_rotation` in the profile) turns the board as a whole,
+counter-clockwise seen from above, by 90°, 180° or 270°: a part at (x, y) on a
+W × H board goes to (H − y, x), (W − x, H − y) or (y, W − x), its rotation
+gains the same angle, the board becomes H × W at 90° and 270°, and the
+fiducial, the panel unit size and rows/columns follow. The origin stays the
+lower-left corner (lower-right for the bottom side, which turns the same way
+in its own mirrored frame). The CAD positions are kept on each part, so the
+setting can be changed back and forth without drift, and a CSV read back off
+the card is taken back to the CAD frame using the profile beside it.
+
 ## Placement order and nozzle changes
 
 The YY1 works straight down the file, so row order is the order the board gets

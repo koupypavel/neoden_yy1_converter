@@ -388,6 +388,52 @@ def consolidate_nozzles(counts, limit, max_steps=1):
     return mapping, notes
 
 
+# --- turning the whole board ---------------------------------------------------
+#
+# A panel that only fits the machine turned: the board is rotated as a whole,
+# counter-clockwise seen from above, by 90, 180 or 270 degrees. Every part
+# moves with it and turns with it, the board's width and height swap at 90
+# and 270, and the origin stays the lower-left corner (lower-right for the
+# bottom side, which is measured in its own mirrored frame and turns the
+# same way). The CAD coordinates are kept as base_x/base_y on each part, so
+# the rotation can be changed back and forth without drift.
+
+BOARD_ROTATIONS = (0, 90, 180, 270)
+
+
+def turn_point(x, y, width, height, angle):
+    """(x, y) on a width x height board, after turning it CCW by angle."""
+    angle = int(angle) % 360
+    if angle == 90:
+        return height - y, x
+    if angle == 180:
+        return width - x, height - y
+    if angle == 270:
+        return y, width - x
+    return x, y
+
+
+def turn_size(width, height, angle):
+    return (height, width) if int(angle) % 180 == 90 else (width, height)
+
+
+def unturn_point(x, y, width, height, angle):
+    """The inverse: a point in the turned frame back to the CAD frame.
+    width/height are the CAD (unturned) board's."""
+    return turn_point(x, y, *turn_size(width, height, angle),
+                      angle=(360 - int(angle)) % 360)
+
+
+def orient(parts, width, height, angle):
+    """Place parts for a board turned by angle. Idempotent: the first call
+    records each part's CAD position, later calls start from it."""
+    for part in parts:
+        bx = part.setdefault('base_x', part['x'])
+        by = part.setdefault('base_y', part['y'])
+        part['x'], part['y'] = [round(v, 4) for v in turn_point(bx, by, width, height, angle)]
+    return turn_size(width, height, angle)
+
+
 def side_changes(ordered, profile, side):
     """The nozzle changes for one side as its file will be written.
 
@@ -1922,6 +1968,8 @@ class Profile(object):
         data = data or {}
         self.board = data.get('board', '')
         self.rot_offset = float(data.get('rot_offset', 0.0))
+        # the whole board turned on the machine, CCW from above (see orient)
+        self.board_rotation = int(data.get('board_rotation', 0) or 0) % 360
         self.order = data.get('order', 'ref')
         self.sequence = list(data.get('sequence') or [])
         # Each board side is its own file with its own header, so a nozzle
@@ -1974,6 +2022,7 @@ class Profile(object):
         and what the window's undo keeps)."""
         return {'version': 1, 'board': self.board, 'notes': self.notes,
                 'rot_offset': self.rot_offset, 'order': self.order,
+                'board_rotation': self.board_rotation,
                 'station_positions': self.station_positions,
                 'omit_skipped': self.omit_skipped,
                 'board_w': self.board_w, 'board_h': self.board_h,

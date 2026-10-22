@@ -608,6 +608,19 @@ def ordered(result, side):
 def refresh_columns(result):
     """Re-apply the profile to already-analysed parts (after a GUI edit)."""
     profile = result.profile
+    # The board as it lies on the machine: turned as a whole when the panel
+    # only fits that way. The CAD size and fiducials are kept so a change of
+    # the rotation always starts from them.
+    angle = getattr(profile, 'board_rotation', 0) or 0
+    if not hasattr(result, 'base_size'):
+        result.base_size = (result.width, result.height)
+        result.base_fiducials = list(getattr(result, 'fiducials', []) or [])
+    bw, bh = result.base_size
+    for side in ('T', 'B'):
+        yy1.orient(result.sides[side], bw, bh, angle)
+    result.width, result.height = yy1.turn_size(bw, bh, angle)
+    result.fiducials = [(ref,) + tuple(round(v, 3) for v in yy1.turn_point(fx, fy, bw, bh, angle)) + (fside,)
+                        for ref, fx, fy, fside in result.base_fiducials]
     for side in ('T', 'B'):
         for part in result.sides[side]:
             column = profile.settings_for(part['package'], part['comment'],
@@ -617,7 +630,7 @@ def refresh_columns(result):
                         place_h=column['place_h'], mode=column['mode'],
                         skip=column['skip'],
                         rot=yy1.norm_rot(part.get('base_rot', part['rot'])
-                                         + profile.rot_offset
+                                         + angle + profile.rot_offset
                                          + column.get('rot_offset', 0.0)))
     return result
 
@@ -628,6 +641,7 @@ def write_files(result, fmt='yy1', outdir=None):
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
     written = []
+    refresh_columns(result)      # the board turned as the profile says
     for side, label in (('T', 'top'), ('B', 'bottom')):
         if not result.sides[side]:
             continue

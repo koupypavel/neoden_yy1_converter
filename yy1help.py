@@ -53,6 +53,10 @@ TIPS = {
              'the four the machine runs without stopping, groups the file, '
              'numbers the feeders and writes the nozzle changes. Shows the '
              'plan before applying it.',
+    'board_rotation': 'The whole board turned on the machine, counter-clockwise '
+                      'seen from above -- for a panel that only fits the other '
+                      'way. Positions, part rotations, board size, fiducial and '
+                      'panel all turn with it (Job header tab).',
     'rotation': 'Added to every part. Set it if a test board comes out turned '
                 'as a whole -- that constant then applies to every board.',
     'side': 'One file per side. Bottom X is mirrored, measured from the '
