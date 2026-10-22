@@ -316,6 +316,10 @@ highest slot first). Once the reels are in, open it as the feeder list for
 the next board, or copy it over the old one. *Save list as…* writes the
 current list the same way, as .ods or .csv.
 
+Every **Export** (next to the board or to the SD card) also writes the
+loading sheet and the completed feeder list into the same folder as the CSV,
+so they travel with the file to the machine.
+
 Both matches write a **loading sheet** beside the project,
 `<board>_yy1_feeders_<side>.html` and `.txt` (*Open loading sheet* shows it):
 the reels to load with slot, tape width and what to take out of that slot

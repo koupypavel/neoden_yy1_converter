@@ -2975,11 +2975,13 @@ class App(tk.Tk):
                 text='%d on the machine, %d to LOAD, %d with no slot -- details in the log.'
                      % (len(matched), len(new), len(manual)))
 
-    def write_loading_sheet(self):
-        """The operator's feeder sheet for this side, beside the project."""
+    def write_loading_sheet(self, folder=None, quiet=False):
+        """The operator's feeder sheet for this side, beside the project --
+        or in `folder` (the export's, so it goes to the SD card too)."""
         if not self.result:
             return None
-        folder = os.path.dirname(self.result.profile_path or '') or self.result.outdir or '.'
+        folder = folder or os.path.dirname(self.result.profile_path or '') or \
+            self.result.outdir or '.'
         base = os.path.join(folder, '%s_yy1' % (self.result.prefix or 'board'))
         try:
             paths = yy1.write_loading_sheet(
@@ -2991,8 +2993,9 @@ class App(tk.Tk):
             return None
         self._loading_sheet = paths[1]
         self.bank_sheet_button.configure(state='normal')
-        self.say('sheet    %s  (and .txt) -- Open loading sheet on the Feeder bank tab'
-                 % paths[1])
+        if not quiet:
+            self.say('sheet    %s  (and .txt) -- Open loading sheet on the Feeder bank tab'
+                     % paths[1])
         # And the list as it will be once the sheet is done: the feeder
         # list with this board's reels in their slots, ready to be the next
         # feeders.ods.
@@ -3000,8 +3003,9 @@ class App(tk.Tk):
             ods = '%s_feeders_%s.ods' % (base, 'top' if self.side.get() == 'T' else 'bottom')
             try:
                 self.completed_library().save_ods(ods)
-                self.say('list     %s -- the feeder list with this board loaded '
-                         '(open it as the list for the next board)' % ods)
+                if not quiet:
+                    self.say('list     %s -- the feeder list with this board loaded '
+                             '(open it as the list for the next board)' % ods)
             except (IOError, OSError) as exc:
                 self.say('could not write %s: %s' % (ods, exc))
         return paths
@@ -4164,6 +4168,31 @@ class App(tk.Tk):
         self.result.profile.save(self.result.profile_path)
         self.mark_dirty(False)
         sheets = [os.path.basename(p)[:-4] + '_setup.html' for p, _ in written]
+        # The feeder list travels with the file: for every side written, the
+        # loading sheet (what to load where) and the list as it will be once
+        # loaded, in the same folder -- on the SD card when that is where the
+        # export went.
+        folder = os.path.dirname(written[0][0])
+        lists = []
+        side_now = self.side.get()
+        try:
+            for path, _ in written:
+                side = 'B' if path.endswith('_bottom.csv') else 'T'
+                self.side.set(side)
+                made = self.write_loading_sheet(folder, quiet=True)
+                if made:
+                    lists.append(os.path.basename(made[1]))
+                    if self.library:
+                        lists.append('%s_yy1_feeders_%s.ods' % (
+                            self.result.prefix, 'top' if side == 'T' else 'bottom'))
+        finally:
+            self.side.set(side_now)
+        for name in lists:
+            self.say('wrote   %s' % os.path.join(folder, name))
+        if not self.library:
+            self.say('note:   no feeder list loaded -- the loading sheet lists every '
+                     'reel as one to load')
+        sheets += [''] + ['Feeder list and loading sheet:'] + lists if lists else []
         messagebox.showinfo(APP, 'Written:\n\n' +
                             '\n'.join('%s  (%d parts)' % w for w in written) +
                             '\n\nOperator sheets beside each file:\n' +

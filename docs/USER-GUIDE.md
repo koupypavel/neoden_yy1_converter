@@ -182,6 +182,12 @@ reels with where each goes — and a blue bar naming what is selected.
   screen asks for them, every feeder slot with its reel, nozzle and
   designators, marked *on machine* or *LOAD*, and what is placed by hand.
   The HTML has tick boxes that the browser remembers; print it.
+- `<board>_yy1_feeders_top.html` and `.txt` — the **loading sheet**: what to
+  load into which slot, what to take out first, what is already on the
+  machine, what goes by hand.
+- `<board>_yy1_feeders_top.ods` — the **feeder list as it will be** once the
+  reels are loaded, in the same columns as your list. On the SD card it is
+  at hand at the machine; back at the desk it is the list for the next board.
 - `<board>_yy1_profile.json` — a copy of the profile, so a card that comes
   back from the machine opens with the same nozzles and settings.
 
